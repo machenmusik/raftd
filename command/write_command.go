@@ -2,7 +2,7 @@ package command
 
 import (
 	"github.com/goraft/raft"
-	"db"
+	"github.com/machenmusik/raftd/db"
 )
 
 // This command writes a value to a key.
