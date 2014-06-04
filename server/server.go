@@ -111,7 +111,7 @@ func (s *Server) ListenAndServe(leader string) error {
 		Handler: s.router,
 	}
 
-	s.router.HandleFunc("/dbJSON", s.dumpJSONHandler).Methods("GET")
+	s.router.HandleFunc("/db", s.dumpHandler).Methods("GET")
 	s.router.HandleFunc("/db/{key}", s.readHandler).Methods("GET")
 	s.router.HandleFunc("/db/{key}", s.writeHandler).Methods("POST")
 	s.router.HandleFunc("/join", s.joinHandler).Methods("POST")
@@ -158,15 +158,29 @@ func (s *Server) joinHandler(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (s *Server) dumpJSONHandler(w http.ResponseWriter, req *http.Request) {
-	w.Write(s.db.DumpJSON())
+func (s *Server) dumpHandler(w http.ResponseWriter, req *http.Request) {
+	if req.Header.Get("Accept") == "application/json" {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(s.db.DumpJSON())
+	} else {
+		// no specific type, but still need to serialize somehow
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(s.db.DumpJSON())
+	}
 }
 
 func (s *Server) readHandler(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
 	value, ok := s.db.Get(vars["key"])
 	if ok {
-		w.Write([]byte(value))
+		if req.Header.Get("Accept") == "application/json" {
+			jsonvalue, _ := json.Marshal(value)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write([]byte(jsonvalue))
+		} else {
+			// no specific type, just output the value
+			w.Write([]byte(value))
+		}
 	} else {
 		w.WriteHeader(http.StatusNotFound)
 	}
