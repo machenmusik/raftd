@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/goraft/raft"
-	"command"
-	"db"
+	"github.com/machenmusik/raftd/command"
+	"github.com/machenmusik/raftd/db"
 	"github.com/gorilla/mux"
 	"io/ioutil"
 	"log"
@@ -168,7 +168,7 @@ func (s *Server) readHandler(w http.ResponseWriter, req *http.Request) {
 	if ok {
 		w.Write([]byte(value))
 	} else {
-		w.Writeheader(http.StatusNotFound)
+		w.WriteHeader(http.StatusNotFound)
 	}
 }
 
