@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/goraft/raft"
-	"github.com/goraft/raftd/command"
-	"github.com/goraft/raftd/db"
+	"command"
+	"db"
 	"github.com/gorilla/mux"
 	"io/ioutil"
 	"log"
@@ -111,6 +111,7 @@ func (s *Server) ListenAndServe(leader string) error {
 		Handler: s.router,
 	}
 
+	s.router.HandleFunc("/dbJSON", s.dumpJSONHandler).Methods("GET")
 	s.router.HandleFunc("/db/{key}", s.readHandler).Methods("GET")
 	s.router.HandleFunc("/db/{key}", s.writeHandler).Methods("POST")
 	s.router.HandleFunc("/join", s.joinHandler).Methods("POST")
@@ -157,10 +158,18 @@ func (s *Server) joinHandler(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func (s *Server) dumpJSONHandler(w http.ResponseWriter, req *http.Request) {
+	w.Write(s.db.DumpJSON())
+}
+
 func (s *Server) readHandler(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
-	value := s.db.Get(vars["key"])
-	w.Write([]byte(value))
+	value, ok := s.db.Get(vars["key"])
+	if ok {
+		w.Write([]byte(value))
+	} else {
+		w.Writeheader(http.StatusNotFound)
+	}
 }
 
 func (s *Server) writeHandler(w http.ResponseWriter, req *http.Request) {
